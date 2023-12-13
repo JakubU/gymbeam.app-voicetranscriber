@@ -1,16 +1,20 @@
 VoiceTranscriber
 =============
 
-Description
+**The VoiceTranscriber is a Python application designed for transcribing audio files using the Whisper Automatic Speech Recognition (ASR) model. It serves as a part of the Keboola Connection ecosystem, providing a seamless integration for audio transcription tasks..**
 
-**The VoiceTranscriber component streamlines the integration of LiveAgent recordings and leverages OpenAI's Whisper API for swift and precise voice-to-text translation. Effortlessly convert audio data into readable and editable text for efficient content management and analysis. Experience enhanced communication and streamlined content processing with this powerful voice transcription tool.**
+## Features
+- **Audio Transcription:** Transcribes audio files specified in the input table using the Whisper ASR model.
+- **Input Configuration:** Accepts a CSV file with details about the audio files to be processed, such as ticket IDs and URLs.
+- **Output Generation:** Produces an output CSV file containing ticket IDs, audio URLs, and their corresponding transcriptions.
+- **Error Handling:** Provides meaningful error messages and logs to facilitate troubleshooting.
 
 Functionality notes
 ===================
 
 ### 1. Transcription Process
 
-The OpenAI Whisper  Component is designed to transcribe audio files using the Whisper Automatic Speech Recognition (ASR) model. The process involves the following steps:
+The OpenAI Component is designed to transcribe audio files using the Whisper Automatic Speech Recognition (ASR) model. The process involves the following steps:
 
 - **Input Data:** The component takes input data in the form of a CSV file containing ticket IDs and corresponding audio file URLs.
 
