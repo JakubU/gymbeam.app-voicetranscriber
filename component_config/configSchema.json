@@ -1,13 +1,10 @@
 {
   "type": "object",
   "title": "extractor configuration",
-  "required": [
-    "api_token"
-  ],
   "properties": {
     "#api_token": {
         "type": "string",
-        "title": "API token",
+        "title": "OpenAI API token",
         "format": "password",
         "propertyOrder": 1,
         "links": [
