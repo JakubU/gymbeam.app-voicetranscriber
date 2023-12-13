@@ -6,4 +6,3 @@ freezegun
 requests
 openai
 pandas
-csv
