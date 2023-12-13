@@ -1,81 +1,71 @@
-"""
-Template Component main class.
-
-"""
-import csv
 import logging
-from datetime import datetime
+from openai import OpenAI
+import requests
+import io
+
 
 from keboola.component.base import ComponentBase
 from keboola.component.exceptions import UserException
 
 # configuration variables
 KEY_API_TOKEN = '#api_token'
-KEY_PRINT_HELLO = 'print_hello'
+audio_url = 'https://gymbeam.ladesk.com/scripts/file.php?view=Y&file=6edrsokf8axgxe7t28n3zml1fgtgfinn'
 
 # list of mandatory parameters => if some is missing,
 # component will fail with readable message on initialization.
-REQUIRED_PARAMETERS = [KEY_PRINT_HELLO]
-REQUIRED_IMAGE_PARS = []
+REQUIRED_PARAMETERS = [KEY_API_TOKEN]
 
 
 class Component(ComponentBase):
-    """
-        Extends base class for general Python components. Initializes the CommonInterface
-        and performs configuration validation.
-
-        For easier debugging the data folder is picked up by default from `../data` path,
-        relative to working directory.
-
-        If `debug` parameter is present in the `config.json`, the default logger is set to verbose DEBUG mode.
-    """
-
     def __init__(self):
         super().__init__()
+        # Nastavení API klíče pro OpenAI
+        self.client = OpenAI(api_key=self.configuration.parameters.get(KEY_API_TOKEN))
+
+    def download_audio_from_url(self, audio_url):
+        try:
+            # Stiahnutie zvukového súboru z URL
+            response = requests.get(audio_url)
+            response.raise_for_status()  # Zkontroluje, zda byl požadavek úspěšný
+
+            buffer = io.BytesIO(response.content)
+            buffer.name = "downloaded_audio.mp3"
+
+            return buffer
+
+        except Exception as e:
+            logging.exception(f"Chyba pri stahovaní zvukového súboru z URL: {str(e)}")
+            raise UserException("Chyba pri stahovaní zvukového súboru z URL.")
+
+    def send_audio_to_whisper(self, audio_content):
+        try:
+            # Odeslanie nahrávky na Whisper ASR
+            transcript = self.client.audio.transcriptions.create(model="whisper-1", file=audio_content)
+            return transcript
+
+        except Exception as e:
+            logging.exception(f"Chyba pri zpracovaní Whisper ASR: {str(e)}")
+            raise UserException("Chyba pri zpracovaní Whisper ASR.")
 
     def run(self):
-        """
-        Main execution code
-        """
+        try:
+            # Kontrola povinných parametrov
+            self.validate_configuration_parameters(REQUIRED_PARAMETERS)
+            audio_content = self.download_audio_from_url(audio_url)
 
-        # ####### EXAMPLE TO REMOVE
-        # check for missing configuration parameters
-        self.validate_configuration_parameters(REQUIRED_PARAMETERS)
-        self.validate_image_parameters(REQUIRED_IMAGE_PARS)
-        params = self.configuration.parameters
-        # Access parameters in data/config.json
-        if params.get(KEY_PRINT_HELLO):
-            logging.info("Hello World")
-
-        # get last state data/in/state.json from previous run
-        previous_state = self.get_state_file()
-        logging.info(previous_state.get('some_state_parameter'))
-
-        # Create output table (Tabledefinition - just metadata)
-        table = self.create_out_table_definition('output.csv', incremental=True, primary_key=['timestamp'])
-
-        # get file path of the table (data/out/tables/Features.csv)
-        out_table_path = table.full_path
-        logging.info(out_table_path)
-
-        # DO whatever and save into out_table_path
-        with open(table.full_path, mode='wt', encoding='utf-8', newline='') as out_file:
-            writer = csv.DictWriter(out_file, fieldnames=['timestamp'])
-            writer.writeheader()
-            writer.writerow({"timestamp": datetime.now().isoformat()})
-
-        # Save table manifest (output.csv.manifest) from the tabledefinition
-        self.write_manifest(table)
-
-        # Write new state - will be available next run
-        self.write_state_file({"some_state_parameter": "value"})
-
-        # ####### EXAMPLE TO REMOVE END
+            # Odeslanie nahrávky na Whisper ASR
+            transcript = self.send_audio_to_whisper(audio_content)
+            
+            # Optionally, you can log or use the transcript as needed.
+            logging.info(f"Whisper ASR Transcript: {transcript}")
+        except UserException as exc:
+            logging.exception(exc)
+            exit(1)
+        except Exception as exc:
+            logging.exception(exc)
+            exit(2)
 
 
-"""
-        Main entrypoint
-"""
 if __name__ == "__main__":
     try:
         comp = Component()
