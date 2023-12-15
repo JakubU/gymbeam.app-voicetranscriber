@@ -82,11 +82,11 @@ class Component(ComponentBase):
         # Create tables definitions
         self._stats_table = self.create_out_table_definition('stats.csv', incremental=True, primary_key=['timestamp'])
         self.output_table = self.create_out_table_definition(
-            'output.csv', incremental=True, primary_key=['ticket_id'])
+            'output.csv', incremental=True, primary_key=['id'])
 
         # Open output file, set headers, writer and write headers
         self._output_file = open(self.output_table.full_path, 'wt', encoding='UTF-8', newline='')
-        output_fields = ['ticket_id', 'url', 'text']
+        output_fields = ['id','message_id','url','text']
         self._output_writer = csv.DictWriter(self._output_file, fieldnames=output_fields)
         self._output_writer.writeheader()
 
@@ -102,7 +102,8 @@ class Component(ComponentBase):
 
             # For each row in the table
             for index, row in df.iterrows():
-                ticket_id = row['ticket_id']
+                id = row['id']
+                message_id = row['message_id']
                 audio_url = row['url']
                  # Optionally, you can log or use the transcript as needed.
                 logging.info(f"Transcription in progress for audio URL: {audio_url}")
@@ -113,7 +114,8 @@ class Component(ComponentBase):
                 transcript = self.send_audio_to_whisper(audio_content)
                 # Write the data to the output CSV file
                 self._output_writer.writerow({
-                    'ticket_id': ticket_id,
+                    'id': id,
+                    'message_id': message_id,
                     'url': audio_url,
                     'text': transcript.text if hasattr(transcript, 'text') else transcript
                 })

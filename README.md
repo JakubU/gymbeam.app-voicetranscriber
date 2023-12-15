@@ -5,7 +5,7 @@ VoiceTranscriber
 
 ## Features
 - **Audio Transcription:** Transcribes audio files specified in the input table using the Whisper ASR model.
-- **Input Configuration:** Accepts a CSV file with details about the audio files to be processed, such as ticket IDs and URLs.
+- **Input Configuration:** Accepts a CSV file with details about the audio files to be processed, such as IDs and URLs.
 - **Output Generation:** Produces an output CSV file containing ticket IDs, audio URLs, and their corresponding transcriptions.
 - **Error Handling:** Provides meaningful error messages and logs to facilitate troubleshooting.
 
@@ -16,7 +16,7 @@ Functionality notes
 
 The OpenAI Component is designed to transcribe audio files using the Whisper Automatic Speech Recognition (ASR) model. The process involves the following steps:
 
-- **Input Data:** The component takes input data in the form of a CSV file containing ticket IDs and corresponding audio file URLs.
+- **Input Data:** The component takes input data in the form of a CSV file containing IDs and corresponding audio file URLs.
 
 - **Download Audio:** It downloads the audio files from the provided URLs.
 
@@ -93,21 +93,23 @@ The input configuration involves specifying the input table containing audio URL
 
 The input table should have the following structure:
 
-| `id` | `url`                                       |
-|-------------|---------------------------------------------|
-| 1           | https://example.com/audio/sample1.mp3       |
-| 2           | https://example.com/audio/sample2.mp3       |
-| ...         | ...                                         |
+| `id` | `message_id` | `url`                                       |
+|------|--------------|---------------------------------------------|
+| 1    | 101          | https://example.com/audio/sample1.mp3       |
+| 2    | 102          | https://example.com/audio/sample2.mp3       |
+| ...  | ...          | ...                                         |
+
 
 # Output Configuration
 
 The component generates output tables with transcriptions. The output CSV file structure includes:
 
-| `id` | `url`                                       | `text`                            |
-|-------------|---------------------------------------------|-----------------------------------|
-| 1           | https://example.com/audio/sample1.mp3       | Transcription of audio sample1.mp3|
-| 2           | https://example.com/audio/sample2.mp3       | Transcription of audio sample2.mp3|
-| ...         | ...                                         | ...                               |
+| `id` | `message_id` | `url`                                       | `text`                            |
+|------|--------------|---------------------------------------------|-----------------------------------|
+| 1    | 101          | https://example.com/audio/sample1.mp3       | Transcription of audio sample1.mp3|
+| 2    | 102          | https://example.com/audio/sample2.mp3       | Transcription of audio sample2.mp3|
+| ...  | ...          | ...                                         | ...                               |
+
 
 # Example Configuration
 
