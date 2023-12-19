@@ -86,7 +86,7 @@ class Component(ComponentBase):
 
         # Open output file, set headers, writer and write headers
         self._output_file = open(self.output_table.full_path, 'wt', encoding='UTF-8', newline='')
-        output_fields = ['id','message_id','url','text']
+        output_fields = ['id','message_id','url','text','result_value']
         self._output_writer = csv.DictWriter(self._output_file, fieldnames=output_fields)
         self._output_writer.writeheader()
 
@@ -117,7 +117,8 @@ class Component(ComponentBase):
                     'id': id,
                     'message_id': message_id,
                     'url': audio_url,
-                    'text': transcript.text if hasattr(transcript, 'text') else transcript
+                    'text': transcript.text if hasattr(transcript, 'text') else transcript,
+                    'result_value': ""
                 })
 
         except UserException as exc:
