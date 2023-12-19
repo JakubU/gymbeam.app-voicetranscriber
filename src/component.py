@@ -84,9 +84,11 @@ class Component(ComponentBase):
         self.output_table = self.create_out_table_definition(
             'output.csv', incremental=True, primary_key=['id'])
 
-        # Open output file in append mode, set headers and writer
-        self._output_file = open(self.output_table.full_path, 'a', encoding='UTF-8', newline='')
-        self._output_writer = csv.writer(self._output_file)
+        # Open output file, set headers, writer and write headers
+        self._output_file = open(self.output_table.full_path, 'wt', encoding='UTF-8', newline='')
+        output_fields = ['id','message_id','url','text']
+        self._output_writer = csv.DictWriter(self._output_file, fieldnames=output_fields)
+        self._output_writer.writeheader()
 
     def run(self):
         try:
@@ -110,8 +112,13 @@ class Component(ComponentBase):
 
                 # Send the audio recording to Whisper ASR
                 transcript = self.send_audio_to_whisper(audio_content)
-                # Append the data to the output CSV file
-                self._output_writer.writerow([id, message_id, audio_url, transcript.text if hasattr(transcript, 'text') else transcript])
+                # Write the data to the output CSV file
+                self._output_writer.writerow({
+                    'id': id,
+                    'message_id': message_id,
+                    'url': audio_url,
+                    'text': transcript.text if hasattr(transcript, 'text') else transcript
+                })
 
         except UserException as exc:
             logging.exception(exc)
