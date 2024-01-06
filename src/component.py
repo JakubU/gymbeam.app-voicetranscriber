@@ -1,4 +1,5 @@
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from openai import OpenAI
 import requests
 import io
@@ -34,9 +35,13 @@ class Component(ComponentBase):
 
             return buffer
 
+        except UserException as e:
+            logging.exception(f"Error downloading audio file from URL: {str(e)}")
+            raise  # Re-raise the exception so it can be caught in the process_row method
         except Exception as e:
             logging.exception(f"Error downloading audio file from URL: {str(e)}")
             raise UserException("Error downloading audio file from URL.")
+
 
     def send_audio_to_whisper(self, audio_content):
         try:
@@ -47,7 +52,7 @@ class Component(ComponentBase):
         except Exception as e:
             logging.exception(f"Error processing Whisper ASR: {str(e)}")
             raise UserException("Error processing Whisper ASR.")
-        
+
     def _parse_table(self):
         """
         Parses the data table.
@@ -74,7 +79,7 @@ class Component(ComponentBase):
             logging.info(f'Input table {table.name} is empty!')
 
         return df
-    
+
     def _create_tables_definitions(self):
         """
         Creates the tables definitions for output tables.
@@ -86,39 +91,55 @@ class Component(ComponentBase):
 
         # Open output file, set headers, writer and write headers
         self._output_file = open(self.output_table.full_path, 'wt', encoding='UTF-8', newline='')
-        output_fields = ['id','message_id','url','text']
+        output_fields = ['id', 'message_id', 'url', 'text']
         self._output_writer = csv.DictWriter(self._output_file, fieldnames=output_fields)
         self._output_writer.writeheader()
+
+    def process_row(self, row):
+        id = row.id
+        message_id = row.message_id
+        audio_url = row.url
+        try:
+            # Optionally, you can log or use the transcript as needed.
+            logging.info(f"Transcription in progress for audio URL: {audio_url}")
+
+            audio_content = self.download_audio_from_url(audio_url)
+
+            # Send the audio recording to Whisper ASR
+            transcript = self.send_audio_to_whisper(audio_content)
+
+            return {
+                'id': id,
+                'message_id': message_id,
+                'url': audio_url,
+                'text': transcript.text if hasattr(transcript, 'text') else transcript
+            }
+        except UserException as e:
+            # If a UserException occurs in the download_audio_from_url method, include the error message in the output
+            return {
+                'id': id,
+                'message_id': message_id,
+                'url': audio_url,
+                'text': f"Error downloading audio file from URL: {str(e)}"
+            }
 
     def run(self):
         try:
             # Check mandatory parameters
             self.validate_configuration_parameters(REQUIRED_PARAMETERS)
-            
+
             # Initialize _output_writer
             self._create_tables_definitions()
 
             df = self._parse_table()
 
-            # For each row in the table
-            for index, row in df.iterrows():
-                id = row['id']
-                message_id = row['message_id']
-                audio_url = row['url']
-                 # Optionally, you can log or use the transcript as needed.
-                logging.info(f"Transcription in progress for audio URL: {audio_url}")
-                
-                audio_content = self.download_audio_from_url(audio_url)
+            # Process rows concurrently using ThreadPoolExecutor
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                results = list(executor.map(self.process_row, df.itertuples(index=False)))
 
-                # Send the audio recording to Whisper ASR
-                transcript = self.send_audio_to_whisper(audio_content)
-                # Write the data to the output CSV file
-                self._output_writer.writerow({
-                    'id': id,
-                    'message_id': message_id,
-                    'url': audio_url,
-                    'text': transcript.text if hasattr(transcript, 'text') else transcript
-                })
+            # Write the data to the output CSV file
+            for result in results:
+                self._output_writer.writerow(result)
 
         except UserException as exc:
             logging.exception(exc)
