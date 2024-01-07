@@ -5,12 +5,12 @@ import requests
 import io
 import pandas as pd
 import csv
-
 from keboola.component.base import ComponentBase
 from keboola.component.exceptions import UserException
 
 # Configuration variables
 KEY_API_TOKEN = '#api_token'
+REQUEST_NUM = 'request_num'
 
 # List of mandatory parameters => if some is missing,
 # component will fail with readable message on initialization.
@@ -41,7 +41,6 @@ class Component(ComponentBase):
         except Exception as e:
             logging.exception(f"Error downloading audio file from URL: {str(e)}")
             raise UserException("Error downloading audio file from URL.")
-
 
     def send_audio_to_whisper(self, audio_content):
         try:
@@ -134,12 +133,16 @@ class Component(ComponentBase):
             df = self._parse_table()
 
             # Process rows concurrently using ThreadPoolExecutor
-            with ThreadPoolExecutor(max_workers=10) as executor:
-                results = list(executor.map(self.process_row, df.itertuples(index=False)))
+            with ThreadPoolExecutor(max_workers=100) as executor:
+                # Send requests in groups of REQUEST_NUM
+                group_size = int(self.configuration.parameters.get(REQUEST_NUM, 1))
+                for i in range(0, len(df), group_size):
+                    group = df.iloc[i:i + group_size]
+                    results = list(executor.map(self.process_row, group.itertuples(index=False)))
 
-            # Write the data to the output CSV file
-            for result in results:
-                self._output_writer.writerow(result)
+                    # Write the data to the output CSV file
+                    for result in results:
+                        self._output_writer.writerow(result)
 
         except UserException as exc:
             logging.exception(exc)
