@@ -6,6 +6,7 @@
         "type": "string",
         "title": "OpenAI API token",
         "format": "password",
+        "description": "For more information use the link",
         "propertyOrder": 1,
         "links": [
           {
@@ -16,11 +17,12 @@
 
     },
     "request_num": {
-      "title": "Request",
+      "title": "Requests per second",
       "type": "number",
       "minLength": 1,
       "default": 10,
       "propertyOrder": 2,
+      "description": "For more information use the link",
       "links": [
         {
           "rel": "OpenAI Limit",

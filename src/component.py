@@ -135,7 +135,7 @@ class Component(ComponentBase):
             # Process rows concurrently using ThreadPoolExecutor
             with ThreadPoolExecutor(max_workers=100) as executor:
                 # Send requests in groups of REQUEST_NUM
-                group_size = int(self.configuration.parameters.get(REQUEST_NUM, 1))
+                group_size = int(self.configuration.parameters.get(REQUEST_NUM, 10))
                 for i in range(0, len(df), group_size):
                     group = df.iloc[i:i + group_size]
                     results = list(executor.map(self.process_row, group.itertuples(index=False)))
