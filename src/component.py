@@ -8,6 +8,7 @@ import csv
 from keboola.component.base import ComponentBase
 from keboola.component.exceptions import UserException
 
+
 # Configuration variables
 KEY_API_TOKEN = '#api_token'
 REQUEST_NUM = 'request_num'
@@ -90,12 +91,13 @@ class Component(ComponentBase):
 
         # Open output file, set headers, writer and write headers
         self._output_file = open(self.output_table.full_path, 'wt', encoding='UTF-8', newline='')
-        output_fields = ['id', 'message_id', 'url', 'text']
+        output_fields = ['id','ticket_id','message_id', 'url', 'text']
         self._output_writer = csv.DictWriter(self._output_file, fieldnames=output_fields)
         self._output_writer.writeheader()
 
     def process_row(self, row):
         id = row.id
+        ticket_id = row.ticket_id
         message_id = row.message_id
         audio_url = row.url
         try:
@@ -109,6 +111,7 @@ class Component(ComponentBase):
 
             return {
                 'id': id,
+                'ticket_id': ticket_id,
                 'message_id': message_id,
                 'url': audio_url,
                 'text': transcript.text if hasattr(transcript, 'text') else transcript
@@ -117,6 +120,7 @@ class Component(ComponentBase):
             # If a UserException occurs in the download_audio_from_url method, include the error message in the output
             return {
                 'id': id,
+                'ticket_id': ticket_id,
                 'message_id': message_id,
                 'url': audio_url,
                 'text': f"Error downloading audio file from URL: {str(e)}"
@@ -135,7 +139,7 @@ class Component(ComponentBase):
             # Process rows concurrently using ThreadPoolExecutor
             with ThreadPoolExecutor(max_workers=100) as executor:
                 # Send requests in groups of REQUEST_NUM
-                group_size = int(self.configuration.parameters.get(REQUEST_NUM, 10))
+                group_size = int(self.configuration.parameters.get(REQUEST_NUM, 1))
                 for i in range(0, len(df), group_size):
                     group = df.iloc[i:i + group_size]
                     results = list(executor.map(self.process_row, group.itertuples(index=False)))
